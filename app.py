@@ -6,6 +6,7 @@ import streamlit as st
 import plotly.express as px
 import joblib
 from scipy.io import loadmat
+import urllib.request
 
 warnings.filterwarnings("ignore")
 st.set_page_config(
@@ -16,7 +17,7 @@ st.set_page_config(
 
 BASE = Path(__file__).resolve().parent
 MAT_PATH = BASE / "amc_dataset_improved.mat"
-MODEL_DIR = BASE / "amc_models"
+MODEL_DIR = BASE
 
 CLASSES = ["AM", "FM", "BPSK", "QPSK", "8PSK", "16QAM", "64QAM"]
 
@@ -162,15 +163,34 @@ def load_dataset():
         return None, f"Could not load dataset: {e}"
 
 
+
 @st.cache_resource(show_spinner="Loading trained models...")
 def load_models():
     loaded = {}
     errors = []
 
+    # Download Random Forest model from Hugging Face
+    rf_path = MODEL_DIR / "random_forest.pkl"
+    rf_url = (
+        "https://huggingface.co/kripa-sharma2006/"
+        "amc-random-forest/resolve/main/random_forest.pkl"
+    )
+
+    if not rf_path.exists():
+    try:
+        with st.spinner("Downloading Random Forest model..."):
+            temp_path = MODEL_DIR / "random_forest.tmp"
+            urllib.request.urlretrieve(rf_url, str(temp_path))
+            temp_path.replace(rf_path)
+    except Exception as e:
+        errors.append(f"Random Forest download failed: {e}")
+        if temp_path.exists():
+            temp_path.unlink()
+
     model_files = [
         ("Random Forest", "random_forest.pkl"),
         ("SVM", "svm.pkl"),
-        ("CNN", "cnn_model.keras")
+        ("CNN", "cnn_model.keras"),
     ]
 
     for name, filename in model_files:
@@ -186,7 +206,6 @@ def load_models():
                 loaded[name] = load_model(path, compile=False)
             else:
                 loaded[name] = joblib.load(path)
-
         except Exception as e:
             errors.append(f"{filename}: {e}")
 
@@ -202,6 +221,7 @@ def load_models():
         errors.append("scaler.pkl not found")
 
     return loaded, scaler, errors
+
 
 
 def prepare_input(model_name, X, scaler):
