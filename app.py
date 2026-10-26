@@ -176,16 +176,18 @@ def load_models():
         "amc-random-forest/resolve/main/random_forest.pkl"
     )
 
-    if not rf_path.exists():
+   
+if not rf_path.exists():
+    temp_path = MODEL_DIR / "random_forest.tmp"
     try:
         with st.spinner("Downloading Random Forest model..."):
-            temp_path = MODEL_DIR / "random_forest.tmp"
             urllib.request.urlretrieve(rf_url, str(temp_path))
             temp_path.replace(rf_path)
     except Exception as e:
         errors.append(f"Random Forest download failed: {e}")
         if temp_path.exists():
             temp_path.unlink()
+
 
     model_files = [
         ("Random Forest", "random_forest.pkl"),
