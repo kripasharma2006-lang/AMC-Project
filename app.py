@@ -162,8 +162,6 @@ def load_dataset():
     except Exception as e:
         return None, f"Could not load dataset: {e}"
 
-
-
 @st.cache_resource(show_spinner="Loading trained models...")
 def load_models():
     loaded = {}
@@ -171,24 +169,24 @@ def load_models():
 
     # Download Random Forest model from Hugging Face
     rf_path = MODEL_DIR / "random_forest.pkl"
+    temp_path = MODEL_DIR / "random_forest.tmp"
+
     rf_url = (
         "https://huggingface.co/kripa-sharma2006/"
         "amc-random-forest/resolve/main/random_forest.pkl"
     )
 
-   
-if not rf_path.exists():
-    temp_path = MODEL_DIR / "random_forest.tmp"
-    try:
-        with st.spinner("Downloading Random Forest model..."):
-            urllib.request.urlretrieve(rf_url, str(temp_path))
-            temp_path.replace(rf_path)
-    except Exception as e:
-        errors.append(f"Random Forest download failed: {e}")
-        if temp_path.exists():
-            temp_path.unlink()
+    if not rf_path.exists():
+        try:
+            with st.spinner("Downloading Random Forest model..."):
+                urllib.request.urlretrieve(rf_url, str(temp_path))
+                temp_path.replace(rf_path)
+        except Exception as e:
+            errors.append(f"Random Forest download failed: {e}")
+            if temp_path.exists():
+                temp_path.unlink()
 
-
+    # Load trained models
     model_files = [
         ("Random Forest", "random_forest.pkl"),
         ("SVM", "svm.pkl"),
@@ -211,6 +209,7 @@ if not rf_path.exists():
         except Exception as e:
             errors.append(f"{filename}: {e}")
 
+    # Load scaler
     scaler = None
     scaler_path = MODEL_DIR / "scaler.pkl"
 
@@ -223,7 +222,6 @@ if not rf_path.exists():
         errors.append("scaler.pkl not found")
 
     return loaded, scaler, errors
-
 
 
 def prepare_input(model_name, X, scaler):
